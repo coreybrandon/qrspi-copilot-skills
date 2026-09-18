@@ -18,7 +18,11 @@ QRSPI (Questions → Research → Spec/Design → Plan → Implement) is a struc
 
 ## Usage
 
-Copy `scripts/qrspi-utils.sh` and the `skills/` directory into your Copilot CLI skills location, then invoke phases in order (e.g. "qrspi init", "qrspi questions", ...). Each phase reads/writes a `manifest.json` in the feature's spec directory to track progress and enforce prerequisites.
+1. Copy `scripts/qrspi-utils.sh` to `~/.copilot/scripts/qrspi-utils.sh` — every skill sources it from that exact path, so it must live there (create the `~/.copilot/scripts/` directory first if needed).
+2. Copy the `skills/` directory's contents into your Copilot CLI skills location (e.g. `~/.copilot/skills/` or a project-level `.github/skills/`).
+3. Invoke phases in order (e.g. "qrspi init", "qrspi questions", ...). Each phase reads/writes a `manifest.json` in the feature's spec directory to track progress and enforce prerequisites.
+
+**Requirements:** `jq` must be installed (`brew install jq`). `qrspi-utils.sh` uses BSD `stat`/`date` syntax and is currently macOS-only.
 
 ## Acknowledgments
 

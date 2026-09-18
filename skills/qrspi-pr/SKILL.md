@@ -38,7 +38,7 @@ Create the pull request with full context from the design process. The PR descri
    git diff main...HEAD --stat
    ```
 
-5. Generate the PR title following this repo's Conventional Commits standard: `<type>(scope): <short imperative description>` (see the team PR & Code Standards), kept under 70 characters.
+5. Generate the PR title following Conventional Commits format: `<type>(scope): <short imperative description>`, kept under 70 characters. If this repo has its own contribution guidelines or PR standards document, follow those instead.
 
 6. Generate the PR body with these sections:
 
