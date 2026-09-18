@@ -6,8 +6,6 @@
 # GNU coreutils are earlier in PATH, `/usr/bin/stat` is used explicitly below
 # so BSD flag syntax (`-f`) keeps working regardless of PATH ordering.
 
-set -euo pipefail
-
 if ! command -v jq >/dev/null 2>&1; then
   echo "ERROR: jq is required but not installed. Install it with: brew install jq" >&2
   return 1 2>/dev/null || exit 1
@@ -25,28 +23,13 @@ qrspi_repo_name() {
 }
 
 # Return path to a specific feature's spec directory
-# Usage: qrspi_spec_dir [feature-name]
-#   If feature-name omitted, reads from manifest in current spec context
+# Usage: qrspi_spec_dir <feature-name>
+#   Use qrspi_find_active_spec instead when no feature name is known.
 qrspi_spec_dir() {
-  local repo feature
+  local feature="${1:?Usage: qrspi_spec_dir <feature-name>}"
+  local repo
   repo=$(qrspi_repo_name)
-  if [[ -n "${1:-}" ]]; then
-    feature="$1"
-  else
-    feature=$(qrspi_feature_name)
-  fi
   echo ".copilot-qrspi/${repo}/specs/${feature}"
-}
-
-# Read current feature name from manifest.json in the spec directory
-# Requires QRSPI_SPEC_DIR to be set or a feature name argument
-qrspi_feature_name() {
-  if [[ -n "${QRSPI_SPEC_DIR:-}" ]]; then
-    jq -r '.feature' "${QRSPI_SPEC_DIR}/manifest.json"
-  else
-    echo "ERROR: QRSPI_SPEC_DIR not set and no feature name provided" >&2
-    return 1
-  fi
 }
 
 # Read manifest.json and return phase statuses as JSON
@@ -70,14 +53,25 @@ qrspi_update_manifest() {
   now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
   local tmp="${spec_dir}/manifest.json.tmp"
+  # jq's exit status must be checked explicitly (no global set -e in this
+  # sourced library) so a failed update never overwrites manifest.json with
+  # a truncated/empty tmp file.
   if [[ "$status" == "complete" ]]; then
-    jq --arg phase "$phase" --arg status "$status" --arg now "$now" \
+    if ! jq --arg phase "$phase" --arg status "$status" --arg now "$now" \
       '.phases[$phase].status = $status | .phases[$phase].completed_at = $now' \
-      "${spec_dir}/manifest.json" > "$tmp"
+      "${spec_dir}/manifest.json" > "$tmp"; then
+      echo "ERROR: Failed to update manifest.json for phase '${phase}'" >&2
+      rm -f "$tmp"
+      return 1
+    fi
   else
-    jq --arg phase "$phase" --arg status "$status" \
+    if ! jq --arg phase "$phase" --arg status "$status" \
       '.phases[$phase].status = $status' \
-      "${spec_dir}/manifest.json" > "$tmp"
+      "${spec_dir}/manifest.json" > "$tmp"; then
+      echo "ERROR: Failed to update manifest.json for phase '${phase}'" >&2
+      rm -f "$tmp"
+      return 1
+    fi
   fi
   mv "$tmp" "${spec_dir}/manifest.json"
 }
